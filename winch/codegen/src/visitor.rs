@@ -119,7 +119,7 @@ where
     }
 
     fn visit_drop(&mut self) -> Self::Output {
-        self.context.stack.pop();
+        self.context.drop_last(1);
     }
 
     fn visit_i64_const(&mut self, val: i64) {
