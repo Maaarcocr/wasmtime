@@ -103,6 +103,7 @@ macro_rules! def_unsupported {
     (emit Loop $($rest:tt)*) => {};
     (emit Br $($rest:tt)*) => {};
     (emit BrIf $($rest:tt)*) => {};
+    (emit Drop $($rest:tt)*) => {};
 
     (emit $unsupported:tt $($rest:tt)*) => {$($rest)*};
 }
@@ -115,6 +116,10 @@ where
 
     fn visit_i32_const(&mut self, val: i32) {
         self.context.stack.push(Val::i32(val));
+    }
+
+    fn visit_drop(&mut self) -> Self::Output {
+        self.context.stack.pop();
     }
 
     fn visit_i64_const(&mut self, val: i64) {
