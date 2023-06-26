@@ -266,6 +266,15 @@ impl Masm for MacroAssembler {
     fn jmp(&mut self, _target: MachLabel) {
         todo!()
     }
+
+    fn switch(
+            &mut self,
+            context: &mut CodeGenContext,
+            name: Reg,
+            targets: &[MachLabel],
+        ) {
+        todo!()
+    }
 }
 
 impl MacroAssembler {

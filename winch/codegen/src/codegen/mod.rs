@@ -283,13 +283,27 @@ where
     /// # Panics
     /// This function panics if the given depth cannot be associated
     /// with a control stack frame.
-    pub fn control_at(frames: &mut [ControlStackFrame], depth: u32) -> &mut ControlStackFrame {
+    pub fn control_at_mut(frames: &mut [ControlStackFrame], depth: u32) -> &mut ControlStackFrame {
         let index = (frames.len() - 1)
             .checked_sub(depth as usize)
             .unwrap_or_else(|| panic!("expected valid control stack frame at index: {}", depth));
 
         &mut frames[index]
     }
+
+    /// Returns the control stack frame at the given depth.
+    ///
+    /// # Panics
+    /// This function panics if the given depth cannot be associated
+    /// with a control stack frame.
+    pub fn control_at(frames: &[ControlStackFrame], depth: u32) -> &ControlStackFrame {
+        let index = (frames.len() - 1)
+            .checked_sub(depth as usize)
+            .unwrap_or_else(|| panic!("expected valid control stack frame at index: {}", depth));
+
+        &frames[index]
+    }
+
 
     fn spill_register_arguments(&mut self) {
         self.sig

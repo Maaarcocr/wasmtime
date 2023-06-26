@@ -14,7 +14,7 @@ use crate::{
 };
 use crate::{isa::reg::Reg, masm::CalleeKind};
 use cranelift_codegen::{
-    isa::x64::settings as x64_settings, settings, Final, MachBufferFinalized, MachLabel,
+    isa::x64::{settings as x64_settings, Inst, LabelUse}, settings, Final, MachBufferFinalized, MachLabel
 };
 
 /// x64 MacroAssembler.
@@ -481,6 +481,37 @@ impl Masm for MacroAssembler {
 
             context.stack.push(Val::reg(dst));
             context.free_gpr(tmp);
+        }
+    }
+
+    fn switch(
+            &mut self,
+            context: &mut CodeGenContext,
+            target: Reg,
+            targets: &[MachLabel],
+        ) {
+        let name = self.get_label();
+        self.bind(name);
+
+        let table_address = context.any_gpr(self);
+        self.asm.get_label_address(name, table_address);
+
+        let offset_from_table_address = context.any_gpr(self);
+        self.asm.mov_sx_mr(table_address, target, offset_from_table_address);
+
+        self.asm.add_rr(offset_from_table_address, table_address, OperandSize::S64);
+        self.asm.jmp_r(table_address);
+
+        let jt_off = self.asm.cur_offset();
+        for target in targets {
+            let word_off = self.asm.cur_offset();
+            // off_into_table is an addend here embedded in the label to be later patched at
+            // the end of codegen. The offset is initially relative to this jump table entry;
+            // with the extra addend, it'll be relative to the jump table's start, after
+            // patching.
+            let off_into_table = word_off - jt_off;
+            self.asm.use_label_at_offset(word_off, *target, LabelUse::PCRel32);
+            self.asm.put4(off_into_table);
         }
     }
 }

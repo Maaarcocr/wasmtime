@@ -103,6 +103,8 @@ macro_rules! def_unsupported {
     (emit Loop $($rest:tt)*) => {};
     (emit Br $($rest:tt)*) => {};
     (emit BrIf $($rest:tt)*) => {};
+    (emit BrTable $($rest:tt)*) => {};
+
 
     (emit $unsupported:tt $($rest:tt)*) => {$($rest)*};
 }
@@ -546,15 +548,27 @@ where
     }
 
     fn visit_br(&mut self, depth: u32) {
-        let frame = Self::control_at(&mut self.control_frames, depth);
+        let frame = Self::control_at_mut(&mut self.control_frames, depth);
         self.context.pop_abi_results(frame.result(), self.masm);
         self.masm.jmp(*frame.label());
         frame.set_as_target();
         self.context.reachable = false;
     }
 
+    fn visit_br_table(&mut self, br_table: wasmparser::BrTable) {
+        let target = self.context.pop_to_reg(self.masm, None, OperandSize::S32);
+        let default = br_table.default();
+        let targets = br_table
+            .targets()
+            .map(|depth| *Self::control_at(&self.control_frames, depth.unwrap()).label())
+            .collect::<Vec<_>>();
+        let default_label = Self::control_at(&self.control_frames, default).label();
+
+        self.masm.switch(&mut self.context, target.into(), &targets)
+    }
+
     fn visit_br_if(&mut self, depth: u32) {
-        let frame = Self::control_at(&mut self.control_frames, depth);
+        let frame = Self::control_at_mut(&mut self.control_frames, depth);
         frame.set_as_target();
         let result = frame.result();
         let result_reg = self.context.gpr(result.result_reg(), self.masm);

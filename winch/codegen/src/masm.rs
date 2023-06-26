@@ -344,6 +344,13 @@ pub(crate) trait MacroAssembler {
         size: OperandSize,
     );
 
+    fn switch(
+        &mut self,
+        context: &mut CodeGenContext,
+        target: Reg,
+        cases: &[MachLabel],
+    );
+
     /// Emits and unconditional jump to the given label.
     fn jmp(&mut self, target: MachLabel);
 }

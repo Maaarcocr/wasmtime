@@ -1,0 +1,39 @@
+;;! target = "x86_64"
+(module
+  (func $dummy (param i32))
+  (func (export "singleton") (param i32)
+    (block
+      (block
+        (br_table 1 0 (local.get 0))
+        (i32.const 21)
+        (call $dummy)
+      )
+      (i32.const 20)
+      (call $dummy)
+    )
+  )
+)
+
+
+;;    0:	 55                   	push	rbp
+;;    1:	 4889e5               	mov	rbp, rsp
+;;    4:	 4883ec10             	sub	rsp, 0x10
+;;    8:	 897c240c             	mov	dword ptr [rsp + 0xc], edi
+;;    c:	 4c89742404           	mov	qword ptr [rsp + 4], r14
+;;   11:	 4883c410             	add	rsp, 0x10
+;;   15:	 5d                   	pop	rbp
+;;   16:	 c3                   	ret
+;;
+;;    0:	 55                   	push	rbp
+;;    1:	 4889e5               	mov	rbp, rsp
+;;    4:	 4883ec10             	sub	rsp, 0x10
+;;    8:	 897c240c             	mov	dword ptr [rsp + 0xc], edi
+;;    c:	 4c89742404           	mov	qword ptr [rsp + 4], r14
+;;   11:	 8b44240c             	mov	eax, dword ptr [rsp + 0xc]
+;;   15:	 bf15000000           	mov	edi, 0x15
+;;   1a:	 e800000000           	call	0x1f
+;;   1f:	 bf14000000           	mov	edi, 0x14
+;;   24:	 e800000000           	call	0x29
+;;   29:	 4883c410             	add	rsp, 0x10
+;;   2d:	 5d                   	pop	rbp
+;;   2e:	 c3                   	ret

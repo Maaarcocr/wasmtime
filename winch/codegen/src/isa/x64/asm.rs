@@ -8,16 +8,16 @@ use cranelift_codegen::{
     entity::EntityRef,
     ir::TrapCode,
     ir::{ExternalName, Opcode, UserExternalNameRef},
-    isa::x64::{
+    isa::{x64::{
         args::{
             self, AluRmiROpcode, Amode, CmpOpcode, DivSignedness, ExtMode, FromWritableReg, Gpr,
             GprMem, GprMemImm, Imm8Gpr, Imm8Reg, RegMem, RegMemImm,
             ShiftKind as CraneliftShiftKind, SyntheticAmode, WritableGpr, CC,
         },
-        settings as x64_settings, CallInfo, EmitInfo, EmitState, Inst,
-    },
+        settings as x64_settings, CallInfo, EmitInfo, EmitState, Inst, LabelUse,
+    }},
     settings, Final, MachBuffer, MachBufferFinalized, MachInstEmit, MachInstEmitState, MachLabel,
-    Writable,
+    Writable, binemit::CodeOffset, MachInst,
 };
 
 use super::{address::Address, regs};
@@ -273,6 +273,17 @@ impl Assembler {
                 dst: dst.into(),
             });
         }
+    }
+
+    pub fn mov_sx_mr(&mut self, base: Reg, index: Reg, dst: Reg) {
+        let amode = Amode::imm_reg_reg_shift(0, base.into(), index.into(), 0);
+        let src = SyntheticAmode::real(amode);
+        let reg_mem = RegMem::mem(src);
+        self.emit(Inst::MovsxRmR {
+            ext_mode: ExtMode::LQ,
+            src: GprMem::new(reg_mem).expect("valid memory address"),
+            dst: dst.into(),
+        });
     }
 
     /// Subtract instruction variants.
@@ -841,5 +852,28 @@ impl Assembler {
     /// Performs an unconditional jump to the given label.
     pub fn jmp(&mut self, target: MachLabel) {
         self.emit(Inst::JmpKnown { dst: target });
+    }
+
+    pub fn jmp_r(&mut self, target: Reg) {
+        self.emit(Inst::JmpUnknown {
+            target: RegMem::reg(target.into()),
+        });
+    }
+
+    pub fn cur_offset(&self) -> CodeOffset {
+        self.buffer.cur_offset()
+    }
+
+    pub fn use_label_at_offset(&mut self, offset: CodeOffset, label: MachLabel, kind: LabelUse) {
+        self.buffer.use_label_at_offset(offset, label, kind);
+    }
+
+    pub fn put4(&mut self, value: u32) {
+        self.buffer.put4(value);
+    }
+
+    pub fn get_label_address(&mut self, label: MachLabel, dest: Reg) {
+        let dst = dest.into();
+        self.emit(Inst::LoadEffectiveAddress { addr: SyntheticAmode::Real(Amode::RipRelative { target: label }), dst: dst, size: args::OperandSize::Size64});
     }
 }
