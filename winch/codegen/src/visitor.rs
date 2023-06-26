@@ -4,6 +4,7 @@
 //! which validates and dispatches to the corresponding
 //! machine code emitter.
 
+use crate::abi::ABI;
 use crate::codegen::CodeGen;
 use crate::codegen::ControlStackFrame;
 use crate::masm::{CmpKind, DivKind, MacroAssembler, OperandSize, RegImm, RemKind, ShiftKind};
@@ -119,6 +120,9 @@ where
     }
 
     fn visit_drop(&mut self) -> Self::Output {
+        if let Some(Val::Memory(_)) = self.context.stack.peek() {
+            self.masm.free_stack(<M as MacroAssembler>::ABI::word_bytes());
+        }
         self.context.drop_last(1);
     }
 
