@@ -267,12 +267,22 @@ impl Masm for MacroAssembler {
         todo!()
     }
 
-    fn switch(
-            &mut self,
-            context: &mut CodeGenContext,
-            name: Reg,
-            targets: &[MachLabel],
-        ) {
+    fn switch(&mut self, context: &mut CodeGenContext, name: Reg, targets: &[MachLabel]) {
+        todo!()
+    }
+
+    fn cmov(
+        &mut self,
+        cmp_kind: CmpKind,
+        consequent: Reg,
+        alternative: Reg,
+        dst: Reg,
+        size: OperandSize,
+    ) {
+        todo!()
+    }
+
+    fn cmp(&mut self, src: RegImm, dst: RegImm, size: OperandSize) {
         todo!()
     }
 }

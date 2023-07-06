@@ -5,19 +5,20 @@ use crate::{
     masm::{CalleeKind, CmpKind, DivKind, OperandSize, RemKind, ShiftKind},
 };
 use cranelift_codegen::{
+    binemit::CodeOffset,
     entity::EntityRef,
     ir::TrapCode,
     ir::{ExternalName, Opcode, UserExternalNameRef},
-    isa::{x64::{
+    isa::x64::{
         args::{
             self, AluRmiROpcode, Amode, CmpOpcode, DivSignedness, ExtMode, FromWritableReg, Gpr,
             GprMem, GprMemImm, Imm8Gpr, Imm8Reg, RegMem, RegMemImm,
             ShiftKind as CraneliftShiftKind, SyntheticAmode, WritableGpr, CC,
         },
         settings as x64_settings, CallInfo, EmitInfo, EmitState, Inst, LabelUse,
-    }},
-    settings, Final, MachBuffer, MachBufferFinalized, MachInstEmit, MachInstEmitState, MachLabel,
-    Writable, binemit::CodeOffset, MachInst,
+    },
+    settings, Final, MachBuffer, MachBufferFinalized, MachInst, MachInstEmit, MachInstEmitState,
+    MachLabel, Writable,
 };
 
 use super::{address::Address, regs};
@@ -874,6 +875,27 @@ impl Assembler {
 
     pub fn get_label_address(&mut self, label: MachLabel, dest: Reg) {
         let dst = dest.into();
-        self.emit(Inst::LoadEffectiveAddress { addr: SyntheticAmode::Real(Amode::RipRelative { target: label }), dst: dst, size: args::OperandSize::Size64});
+        self.emit(Inst::LoadEffectiveAddress {
+            addr: SyntheticAmode::Real(Amode::RipRelative { target: label }),
+            dst: dst,
+            size: args::OperandSize::Size64,
+        });
+    }
+
+    pub fn cmov(
+        &mut self,
+        cmp_kind: CmpKind,
+        consequent: Reg,
+        alternative: Reg,
+        dst: Reg,
+        size: OperandSize,
+    ) {
+        self.emit(Inst::Cmove {
+            size: size.into(),
+            cc: cmp_kind.into(),
+            consequent: consequent.into(),
+            alternative: alternative.into(),
+            dst: dst.into(),
+        });
     }
 }

@@ -558,11 +558,19 @@ where
     fn visit_br_table(&mut self, br_table: wasmparser::BrTable) {
         let target = self.context.pop_to_reg(self.masm, None, OperandSize::S32);
         let default = br_table.default();
-        let targets = br_table
+        let mut targets = br_table
             .targets()
             .map(|depth| *Self::control_at(&self.control_frames, depth.unwrap()).label())
             .collect::<Vec<_>>();
-        let default_label = Self::control_at(&self.control_frames, default).label();
+        targets.push(*Self::control_at(&self.control_frames, default).label());
+
+        // If the target is out of range, jump to the default target.
+        // we do this by calculating the minimum of the target and the length of the targets array
+        let len_reg = self.context.any_gpr(self.masm);
+        self.masm.mov(RegImm::imm(targets.len() as i64), len_reg.into(), OperandSize::S64);
+        self.masm.cmp(target.into(), len_reg.into(), OperandSize::S64);
+        self.masm.cmov(CmpKind::LeU, len_reg, target, target, OperandSize::S64);
+        self.context.free_gpr(len_reg);
 
         self.masm.switch(&mut self.context, target.into(), &targets)
     }

@@ -304,7 +304,6 @@ where
         &frames[index]
     }
 
-
     fn spill_register_arguments(&mut self) {
         self.sig
             .params
